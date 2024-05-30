@@ -175,7 +175,7 @@ par(mfrow = c(1, 1))
 # Normality of residuals
 qqnorm(residuals(multivariate_model_1))
 qqline(residuals(multivariate_model_1), col = "red")
-
+# 
 
 # Multivariate model 2: without wc (to avoid multicollinearity)
 multivariate_model_2 <- lm(sbp ~ age  + imc + dbp, data = bp) 
@@ -225,5 +225,5 @@ anova(multivariate_model_1,multivariate_model_2) # p-value <0.05
 #compare univariate model with diastolic blood pressure VS multivariate model_2:
 anova(model_dbp, multivariate_model_2) # multivariate_model_2 is preferable p-value>0.05
 
-# extract AIC (Akaike information criterion) and BIC (Bayseian information criterior):
+# extract AIC (Akaike information criterion) and BIC (Baeysian information criterior):
 
