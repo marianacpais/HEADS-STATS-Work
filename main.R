@@ -1,4 +1,4 @@
-ds_path <- "datasets/Anesthesia-DatasetA.sav"
+ds_path <- "Anesthesia-DatasetA.sav"
 ds <- read_spss(ds_path)
 
 hist(ds$EuroScore)
