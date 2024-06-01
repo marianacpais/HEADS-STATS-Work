@@ -3,8 +3,12 @@ library(readr)
 library(ggplot2)
 library(dplyr)
 library(car)
+library(knitr)
 
-installed.packages("lm.beta")
+install.packages("kableExtra")
+library(kableExtra)
+
+install.packages("lm.beta")
 library(lm.beta)
 
 PA_DatasetD <- read_sav("PA-DatasetD.sav")
@@ -54,19 +58,30 @@ hist(bp$imc)
 View(bp)
 sum(is.na(bp)) ## no mising values
 
+
 ################ Scatter plots to check linearity:################
 
 # systolic blood pressure and age:
 ggplot(bp, aes(x=age, y=sbp)) + geom_point() + geom_smooth(method="lm") + 
   ggtitle("SBP vs AGE") + xlab("Age") + ylab("Systolic Blood Pressure (mm Hg)") + theme_minimal(base_size = 15)
 
+cor_test_result <- cor.test(bp$sbp, bp$age, method = "pearson") # 0.49 (low to moderate correlation) - statistical significant p-value <0.05
+print(cor_test_result)
+
+
 #systolic blood pressure with the imc:
 ggplot(bp, aes(x=imc, y=sbp)) + geom_point() + geom_smooth(method="lm") + 
   ggtitle("SBP vs IMC") + xlab("IMC") + ylab("Systolic Blood Pressure (mm Hg)") + theme_minimal(base_size = 15)
 
+cor_test_result <- cor.test(bp$sbp, bp$imc, method = "pearson") # 0.43 (low to moderate correlation) - statistical significant p-value <0.05
+print(cor_test_result)
+
 #systolic blood pressure and wc:
 ggplot(bp, aes(x=wc, y=sbp)) + geom_point() + geom_smooth(method="lm") + 
   ggtitle("SBP vs wc") + xlab("wc") + ylab("Systolic Blood Pressure (mm Hg)") + theme_minimal(base_size = 15)
+
+cor_test_result <- cor.test(bp$sbp, bp$wc, method = "pearson") # 0.44 (low to moderate correlation) - statistical significant p-value <0.05
+print(cor_test_result)
 
 
 # systolic blood pressure and diastolic blood pressure:
@@ -84,7 +99,8 @@ ggplot(bp, aes(x=dbp, y=sbp)) +
 # Correlation: Given the strong linear relationship, you might find a high correlation coefficient between SBP and DBP.
 
 # Correlation test between systolic and diastolic blood pressure:Pearson coefficient
-cor.test(bp$sbp, bp$dbp, method = "pearson") # 0.82 (very strong correlation) - statistical significant p-value <0.05
+cor_test_result <- cor.test(bp$sbp, bp$dbp, method = "pearson") # 0.82 (strong correlation) - statistical significant p-value <0.05
+print(cor_test_result)
 
 ######################################## boxplot of systolic blood pressure by Gender:
 table(bp$sex) ## more women than men in the dataset
@@ -107,6 +123,45 @@ ggplot(bp, aes(x=sex, y=sbp, fill=sex)) +
 
 ## close medians in both genders - not very different from each other
 
+
+####################################### descriptive statistics - create a table for the power point presentation
+
+# Calculate summary statistics for sbp and dbp
+summary_stats <- bp %>%
+  summarise(
+    count_sbp = n(),
+    mean_sbp = mean(sbp, na.rm = TRUE),
+    sd_sbp = sd(sbp, na.rm = TRUE),
+    min_sbp = min(sbp, na.rm = TRUE),
+    `25th percentile_sbp` = quantile(sbp, 0.25, na.rm = TRUE),
+    median_sbp = median(sbp, na.rm = TRUE),
+    `75th percentile_sbp` = quantile(sbp, 0.75, na.rm = TRUE),
+    max_sbp = max(sbp, na.rm = TRUE),
+    
+    count_dbp = n(),
+    mean_dbp = mean(dbp, na.rm = TRUE),
+    sd_dbp = sd(dbp, na.rm = TRUE),
+    min_dbp = min(dbp, na.rm = TRUE),
+    `25th percentile_dbp` = quantile(dbp, 0.25, na.rm = TRUE),
+    median_dbp = median(dbp, na.rm = TRUE),
+    `75th percentile_dbp` = quantile(dbp, 0.75, na.rm = TRUE),
+    max_dbp = max(dbp, na.rm = TRUE)
+  )
+
+# Create the summary statistics table
+summary_table <- data.frame(
+  Statistic = c("Count", "Mean", "Std Dev", "Min", "25th Percentile", "Median", "75th Percentile", "Max"),
+  SBP = c(summary_stats$count_sbp, summary_stats$mean_sbp, summary_stats$sd_sbp, summary_stats$min_sbp, 
+          summary_stats$`25th percentile_sbp`, summary_stats$median_sbp, summary_stats$`75th percentile_sbp`, summary_stats$max_sbp),
+  DBP = c(summary_stats$count_dbp, summary_stats$mean_dbp, summary_stats$sd_dbp, summary_stats$min_dbp, 
+          summary_stats$`25th percentile_dbp`, summary_stats$median_dbp, summary_stats$`75th percentile_dbp`, summary_stats$max_dbp)
+)
+
+# Display the table using kable
+kable(summary_table, format = "html", caption = "Summary Statistics of Blood Pressure") %>%
+  kable_styling(full_width = FALSE, position = "left")
+
+
 ##################### univariate analysis using linear regression:
 # to understand the relationship between systolic blood pressure and each independent variable individually:
 
@@ -117,6 +172,17 @@ model_age <- lm(sbp ~ age, data = bp)  # p- value 0.000(..) age is statistical s
 summary(model_age)
 confint(model_age)
 anova(model_age)
+
+#Plot the data and the age_model
+ggplot(bp, aes(x = age, y = sbp)) +
+  geom_point(color = "blue", alpha = 0.5) +
+  geom_smooth(method = "lm", color = "red", fill = "lightgray") +
+  ggtitle("Relationship between Age and Systolic Blood Pressure") +
+  xlab("Age") +
+  ylab("Systolic Blood Pressure (mm Hg)") +
+  theme_minimal(base_size = 15) 
+
+
 
 # sex
 model_sex <- lm(sbp ~ sex, data = bp) # p-value 0.505 gender is not statistical significant (as the boxplot already shown)
@@ -129,15 +195,45 @@ summary(model_imc)
 confint(model_imc)
 anova(model_imc)
 
+# Plot the data and the imc_model
+ggplot(bp, aes(x = imc, y = sbp)) +
+  geom_point(color = "blue", alpha = 0.5) + 
+  geom_smooth(method = "lm", color = "red", fill = "lightgray") +
+  ggtitle("Relationship between IMC and Systolic Blood Pressure") +
+  xlab("IMC (BMI)") +
+  ylab("Systolic Blood Pressure (mm Hg)") +
+  theme_minimal(base_size = 15) 
+
+
 # wc
 model_wc <- lm(sbp ~ wc, data = bp)  # p-value 0.000(...) wc is statistical significant
 summary(model_wc)
+confint(model_wc)
+anova(model_wc)
+
+#Plot the data and the wc_model
+ggplot(bp, aes(x = wc, y = sbp)) +
+  geom_point(color = "blue", alpha = 0.5) + 
+  geom_smooth(method = "lm", color = "red", fill = "lightgray") +
+  ggtitle("Relationship between Waist Circumference and Systolic Blood Pressure") +
+  xlab("Waist Circumference (cm)") +
+  ylab("Systolic Blood Pressure (mm Hg)") +
+  theme_minimal(base_size = 15) 
 
 # dbp
 model_dbp <- lm(sbp ~ dbp, data = bp) # p-value 0.000 (..) diastolic blood pressure is statistical significant
 summary(model_dbp)
 confint(model_dbp)
 anova(model_dbp)
+
+ggplot(bp, aes(x = dbp, y = sbp)) +
+  geom_point(color = "blue", alpha = 0.5) + # Scatter plot of the data points
+  geom_smooth(method = "lm", color = "red", fill = "lightgray") +
+  ggtitle("Relationship between Diastolic and Systolic Blood Pressure") +
+  xlab("Diastolic Blood Pressure (mm Hg)") +
+  ylab("Systolic Blood Pressure (mm Hg)") +
+  theme_minimal(base_size = 15) 
+ 
 
 
 ################################### multivariate analysis (with the statistically significant variables:sex excluded!!!)
@@ -225,5 +321,9 @@ anova(multivariate_model_1,multivariate_model_2) # p-value <0.05
 #compare univariate model with diastolic blood pressure VS multivariate model_2:
 anova(model_dbp, multivariate_model_2) # multivariate_model_2 is preferable p-value>0.05
 
-# extract AIC (Akaike information criterion) and BIC (Baeysian information criterior):
+# extract AIC (Akaike information criterion) and BIC (Baeysian information criterior) to compare models:
+
+
+# perform cross validation:
+
 
