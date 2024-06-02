@@ -42,7 +42,7 @@ qqline(bp$sbp, col="red")
 
 
 ggplot(bp, aes(x=sbp)) + geom_histogram(fill="lightblue", color="black", binwidth=10) + 
-  ggtitle("Distribution of Systolic Blood Pressure") +
+  ggtitle("Distribution of\nSystolic Blood Pressure") +
   xlab("Systolic Blood Pressure (mmHg)") + ylab("Frequency") + theme_minimal(base_size = 15)
 
 hist(bp$dbp)
@@ -59,6 +59,36 @@ hist(bp$imc)
 
 View(bp)
 sum(is.na(bp)) ## no mising values
+
+
+# create the alternate outcome variable PAM:
+bp <- bp %>%
+  mutate(pam = (2*dbp + sbp) / 3)
+
+hist(bp$pam)
+
+View(bp)
+sum(is.na(bp)) ## no mising values
+
+
+# Checking normality with Q-Q plot  
+par(mfrow=c(1, 1)) # Reset graphics layout if necessary
+qqnorm(bp$pam, main="Q-Q Plot of Mean Arterial Blood Pressure")
+qqline(bp$pam, col="red")
+
+
+ggplot(bp, aes(x=pam)) + geom_histogram(fill="lightblue", color="black", binwidth=10) + 
+  ggtitle("Distribution of\nMean Arterial Blood Pressure") +
+  xlab("Mean Arterial Pressure (mmHg)") + ylab("Frequency") + theme_minimal(base_size = 15)
+
+hist(bp$pam)
+
+# shapiro-wilk test to check normality of the pam:
+shapiro.test(bp$pam) ## p-value 0.1929
+
+qqnorm(bp$pam, main="Q-Q Plot of Mean Arterial Pressure")
+qqline(bp$pam, col="blue")
+
 
 
 ################ Scatter plots to check linearity:################

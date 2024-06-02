@@ -1,0 +1,122 @@
+####Aula 19/02/2024####
+
+#Exercício 1 - BD: BMD_weight_new
+
+#Abrir o ficheiro SPSS:
+
+path
+
+library(haven)
+BMD_weight_new <- read_sav("C:/Users/fmup.anfiteatros/BMD_weight_new.sav")
+View(BMD_weight_new)
+
+dados <- BMD_weight_new
+View(dados)
+
+#a) Calcular o IMC = peso/altura^2 (altura em metros):
+
+dados$IMC <- round(dados$peso/((dados$altura/100)^2),2)
+
+#b) Calcular média e desvio-padrão de BMDTOT:
+
+hist(dados$bmdtot)
+mean(dados$bmdtot,na.rm=T)
+sd(dados$bmdtot,na.rm=T)
+
+#A média de BMDTOT é 0.82 (0.12) unidades.
+
+#c) Analisar a associação linear entre BMDTOT e IMC:
+
+#diagrama de dispersão
+
+plot(x=dados$IMC, y=dados$bmdtot,xlab="IMC", ylab="Total bone mineral density")
+
+cor.test(dados$IMC,dados$bmdtot,method="pearson") #r = 0.31 (p-value <0.001)
+
+mod1 <- lm(bmdtot~IMC, data=dados)
+summary(mod1)
+confint(mod1)
+anova(mod1)
+
+#Por cada unidade de aumento no IMC, a BMDTOT aumenta, em média, 0.009 unidades.O IC a 95% é [0.004; 0.012].
+#O coeficiente de determinação ajustado do modelo é 9%, ou seja, 9% da variabilidade existente na BMDTOT é explicada pelo IMC. 
+
+#d)
+#Vamos começar por analisar o modelo que tem a idade como variável independente:
+
+plot(x=dados$idade, y=dados$bmdtot,xlab="Idade", ylab="Total bone mineral density")
+
+cor.test(dados$idade,dados$bmdtot,method="pearson") #r = -0.49 (p-value <0.001)
+
+mod2 <- lm(bmdtot~idade, data=dados)
+summary(mod2)
+confint(mod2)
+anova(mod2)
+
+#Por cada unidade de aumento na Idade, a BMDTOT diminui, em média, 0.006 unidades.O IC a 95% é [-0.007; -0.004].
+#O coeficiente de determinação ajustado do modelo é 23%, ou seja, 23% da variabilidade existente na BMDTOT é explicada pela Idade. 
+
+#Comparação dos modelos pelo coeficiente de determinação ajustado:o mod 2 é preferível ao mod 1, porque tem um coeficiente mais elevado.
+
+#Comparação dos modelos pelo critério AIC:
+
+extractAIC(mod1,k=2)
+extractAIC(mod2,k=2)
+
+#Pelo critério AIC, o mod 2 é preferível ao mod 1.
+
+#Comparação dos modelos pelo critério BIC:
+
+extractAIC(mod1,k=log(190))
+extractAIC(mod2,k=log(190))
+
+#Pelo critério BIC, o mod 2 é preferível ao mod 1.
+
+#Vamos analisar o modelo que tem o tipo de medicação como variável independente:
+
+dados$Medication <- factor(dados$Medication,levels=c(0,1,2),labels=c("No medication","Glucocorticoids","Anticonvulsant"))
+
+mod3 <- lm(bmdtot~Medication, data=dados)
+summary(mod3)
+confint(mod3)
+anova(mod3)
+
+#Como mudar a categoria de referência:
+dados$Medication <- relevel(dados$Medication,ref="Glucocorticoids")
+mod4 <- lm(bmdtot~Medication, data=dados)
+summary(mod4)
+
+#Mod3:
+#Os indivíduos que tomam Glucocorticóides apresentam menos 0.039 unidades, em média, de BMDTOT relativamente aos que não tomam medicação (p-value = 0.140).
+#Os indivíduos que tomam Anticonvulsantes apresentam mais 0.023 unidades, em média, de BMDTOT relativamente aos que não tomam medicação (p-value = 0.541).
+#O coeficiente de determinação ajustado do modelo é 0.4%, ou seja, 0.4% da variabilidade existente na BMDTOT é explicada pelo tipo de medicação. 
+
+#Vamos criar um modelo múltiplo com a idade e com o IMC:
+
+mod5 <- lm(bmdtot~IMC+idade, data=dados)
+summary(mod5)
+
+anova(mod1,mod5)
+#mod 5 é preferível ao mod1, porque rejeitamos H0. 
+anova(mod2,mod5)
+#mod 5 é preferível ao mod2, porque rejeitamos H0.
+
+mod6 <- lm(bmdtot~IMC+idade+Medication, data=dados)
+summary(mod6)
+
+anova(mod5,mod6)
+#mod 5 é preferível ao mod6, porque não rejeitamos H0.
+
+#Mod6:
+#Ajustanto para o IMC e para a idade, os indivíduos que não tomam medicação apresentam, em média, mais 0.027 unidades de BMDTOT relativamente aos que tomam Glucocorticóides (p-value = 0.190).
+#Ajustanto para o IMC e para a idade, os indivíduos que tomam Anticonvulsantes apresentam, em média, mais 0.052 unidades de BMDTOT relativamente aos que tomam Glucocorticóides (p-value = 0.139).
+#O coeficiente de determinação ajustado do modelo é 0.4%, ou seja, 37.2% da variabilidade existente na BMDTOT é explicada pelo tipo de medicação, pela idade e pelo IMC. 
+
+#d) Queremos verificar se o mod6 cumpre as assunções do modelo de RLM:
+
+par(mfrow=c(2,2))
+plot(mod6,cook.levels=c(0.25,0.5,1))
+
+#Padronizar os coeficientes do modelo:
+library(lm.beta)
+lm.beta(mod6)
