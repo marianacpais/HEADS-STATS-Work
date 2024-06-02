@@ -43,7 +43,7 @@ qqline(bp$sbp, col="red")
 
 ggplot(bp, aes(x=sbp)) + geom_histogram(fill="lightblue", color="black", binwidth=10) + 
   ggtitle("Distribution of Systolic Blood Pressure") +
-  xlab("Systolic Blood Pressure (mm Hg)") + ylab("Frequency") + theme_minimal(base_size = 15)
+  xlab("Systolic Blood Pressure (mmHg)") + ylab("Frequency") + theme_minimal(base_size = 15)
 
 hist(bp$dbp)
 qqnorm(bp$sbp, main="Q-Q Plot of Diastolic Blood Pressure")
@@ -235,16 +235,16 @@ ggplot(bp, aes(x = dbp, y = sbp)) +
   xlab("Diastolic Blood Pressure (mm Hg)") +
   ylab("Systolic Blood Pressure (mm Hg)") +
   theme_minimal(base_size = 15) 
- 
+
 
 
 ################################### multivariate analysis (with the statistically significant variables:sex excluded!!!)
 
-multivariate_model_1 <- lm(sbp ~ age  + wc + imc + dbp, data = bp)
+multivariate_model_1 <- lm(sbp ~ age  + wc + imc, data = bp)
 summary(multivariate_model_1)
 
-#r^2 - 0.702/ adjusted 0.69 - 70% of the variance in the dependent variable is explained by the independent variables in model 1
-# age, imc, and dbp are statistically significant predictors of SBP.
+#r^2 adjusted 0.3195 - 32% of the variance in the dependent variable is explained by the independent variables in model 1
+# only age is a statistically significant predictor of SBP.
 # wc is no longer a significant predictor in the presence of other variables.
 
 ##checking for multicollinearity: when independent variables in a model might be correlated:
@@ -276,10 +276,10 @@ qqline(residuals(multivariate_model_1), col = "red")
 # 
 
 # Multivariate model 2: without wc (to avoid multicollinearity)
-multivariate_model_2 <- lm(sbp ~ age  + imc + dbp, data = bp) 
+multivariate_model_2 <- lm(sbp ~ age  + imc, data = bp) 
 summary(multivariate_model_2)
 
-# R^2 - 0.703, adjusted 0.69 -  means that 70% of the variance in diastolic blood pressure is explained by the independent variables in this mode2.
+# R^2 adjusted - 0.325, means that 33% of the variance in diastolic blood pressure is explained by the independent variables in this model2.
 
 # checking for homecedasticity - of residuals
 qqnorm(residuals(multivariate_model_2))
@@ -301,15 +301,9 @@ plot(multivariate_model_1)
 
 
 #multivariate model 3 - without imc
-multivariate_model_3 <- lm(sbp ~ age  + wc + dbp, data = bp) 
+multivariate_model_3 <- lm(sbp ~ age  + wc, data = bp) 
 summary(multivariate_model_3)
 anova(multivariate_model_3)
-
-#multivariate model 4 - without the dbp:
-multivariate_model_4 <- lm(sbp ~ age  + imc + wc, data = bp) 
-summary(multivariate_model_4) # determination coefficient very low!!!! r^2
-anova(multivariate_model_4)
-
 
 
 ## evaluate performance of the models:
@@ -317,7 +311,7 @@ anova(multivariate_model_4)
 # compare model 2 and 1 with similar determination coefficient:
 anova(multivariate_model_1,multivariate_model_2) # p-value <0.05
 
-# The ANOVA comparison between Model 1 and Model 2 shows that adding waist circumference (wc) to the model does not significantly improve the fit. This is evidenced by the p-value of 0.2102, which is not less than 0.05.
+# The ANOVA comparison between Model 1 and Model 2 shows that adding waist circumference (wc) to the model does not significantly improve the fit. This is evidenced by the p-value of 0.778, which is not less than 0.05.
 
 
 #compare univariate model with diastolic blood pressure VS multivariate model_2:
