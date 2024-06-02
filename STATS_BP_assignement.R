@@ -93,14 +93,12 @@ ggplot(bp, aes(x=dbp, y=sbp)) +
   ylab("Systolic Blood Pressure (mm Hg)") + 
   theme_minimal(base_size = 15)
 
-# Positive Linear Relationship: There is a clear positive linear relationship between SBP and DBP. As diastolic blood pressure increases, systolic blood pressure also tends to increase. This is indicated by the upward slope of the regression line.
-# Strength of Relationship: The points are relatively close to the regression line, suggesting a fairly strong linear relationship. However, there is still some spread, indicating variability.
-# Linearity: The linear relationship appears to be a good fit for the data, as indicated by the regression line fitting well through the points.
-# Correlation: Given the strong linear relationship, you might find a high correlation coefficient between SBP and DBP.
 
 # Correlation test between systolic and diastolic blood pressure:Pearson coefficient
 cor_test_result <- cor.test(bp$sbp, bp$dbp, method = "pearson") # 0.82 (strong correlation) - statistical significant p-value <0.05
 print(cor_test_result)
+
+# Obvious - but we never measure systolic blood pressure without measuring the diastolic at the same event, makes no sense clinically!
 
 ######################################## boxplot of systolic blood pressure by Gender:
 table(bp$sex) ## more women than men in the dataset
@@ -241,7 +239,7 @@ ggplot(bp, aes(x = dbp, y = sbp)) +
 multivariate_model_1 <- lm(sbp ~ age  + wc + imc + dbp, data = bp)
 summary(multivariate_model_1)
 
-#r^2 - 0.702/ adjusted 0.69 - 70% of the variance in the dependent variable is explained by the independent variables in model 1
+#r^2 - 0.707/ adjusted 0.70 - 70% of the variance in the dependent variable is explained by the independent variables in model 1
 # age, imc, and dbp are statistically significant predictors of SBP.
 # wc is no longer a significant predictor in the presence of other variables.
 
@@ -298,32 +296,105 @@ par(mfrow = c(2, 2))  # Set up the plotting area
 plot(multivariate_model_1)
 
 
-#multivariate model 3 - without imc
-multivariate_model_3 <- lm(sbp ~ age  + wc + dbp, data = bp) 
+#################### MUlTIVARIATE MODELS WITHOUT DBP FOR OBVIOUS CLINICAL REASONS
+
+# multivariate model 3: age, wc, imc
+multivariate_model_3 <- lm(sbp ~ age + imc + wc , data = bp) ## r^2 0.34, adjusted  0.319
 summary(multivariate_model_3)
 anova(multivariate_model_3)
 
-#multivariate model 4 - without the dbp:
-multivariate_model_4 <- lm(sbp ~ age  + imc + wc, data = bp) 
-summary(multivariate_model_4) # determination coefficient very low!!!! r^2
+# multivariate model 4 - age + imc:                           ## preferable to use imc than wc!!
+multivariate_model_4 <- lm(sbp ~ age + imc, data = bp)
+summary(multivariate_model_4)  ## r^2 0.34, adjusted 0.325
 anova(multivariate_model_4)
 
+# multivariate model 5: age + wc
+multivariate_model_5 <- lm(sbp ~ age + wc, data = bp) ## r^2 0.32, adjusted 0.305 preferable to use the model
+summary(multivariate_model_5) 
+anova(multivariate_model_5)
 
 
-## evaluate performance of the models:
+# evaluate performance of the models:
 
-# compare model 2 and 1 with similar determination coefficient:
-anova(multivariate_model_1,multivariate_model_2) # p-value <0.05
+# compare model 3 and 4 with similar determination coefficient:
+anova(multivariate_model_3,multivariate_model_4) 
 
-# The ANOVA comparison between Model 1 and Model 2 shows that adding waist circumference (wc) to the model does not significantly improve the fit. This is evidenced by the p-value of 0.2102, which is not less than 0.05.
-
-
-#compare univariate model with diastolic blood pressure VS multivariate model_2:
-anova(model_dbp, multivariate_model_2) # multivariate_model_2 is preferable p-value>0.05
-
-# extract AIC (Akaike information criterion) and BIC (Baeysian information criterior) to compare models:
+# The ANOVA comparison between Model 4 and Model 3 shows that adding waist circumference (wc) to the model does not significantly improve the fit. This is evidenced by the p-value > 0.05
 
 
-# perform cross validation:
+# #compare univariate model with diastolic blood pressure VS multivariate model_2:
+# anova(model_dbp, multivariate_model_2) # multivariate_model_2 is preferable p-value>0.05
+# 
+# # compare multivariate model 4 with multivariate model 2:
+# anova(multivariate_model_2, multivariate_model_4)
+
+######### extract AIC (Akaike information criterion) and BIC (Baeysian information criterior) to compare models:
+
+# Sample size
+n <- nrow(bp)
+
+# Extract AIC values
+aic_mod1 <- extractAIC(multivariate_model_3, k = 2) # age, imc, wc
+aic_mod2 <- extractAIC(multivariate_model_4, k = 2) # without wc
+aic_mod3 <- extractAIC(multivariate_model_5, k = 2) # withou imc
+aic_mod4 <- extractAIC(model_age, K = 2) # simple linear model just with age
+
+# Extract BIC values
+bic_mod1 <- extractAIC(multivariate_model_3, k = log(n))
+bic_mod2 <- extractAIC(multivariate_model_4, k = log(n))
+bic_mod3 <- extractAIC(multivariate_model_5, k = log(n))
+bic_mod4 <- extractAIC(model_age, k = log(n))
+
+# Create a data frame for comparison
+comparison <- data.frame(
+  Model = c("multivariate_model_3", "multivariate_model_4", "multivariate_model_5", "model_age"),
+  AIC = c(aic_mod1[2], aic_mod2[2], aic_mod3[2], aic_mod4[2]),
+  BIC = c(bic_mod1[2], bic_mod2[2], bic_mod3[2], bic_mod4[2])
+)
+
+# Print the comparison table
+print(comparison)
+
+# Determine the best model according to AIC
+best_aic_model <- comparison[which.min(comparison$AIC), "Model"]
+cat("According to AIC, the best model is:", best_aic_model, "\n")
+
+# Determine the best model according to BIC
+best_bic_model <- comparison[which.min(comparison$BIC), "Model"]
+cat("According to BIC, the best model is:", best_bic_model, "\n")
+
+
+## checking for multicollinearity: when independent variables in a model might be correlated:
+
+vif(multivariate_model_4) # no multicollearity
+vif(multivariate_model_3) ## imc (4.04); wc (4.04) moderate mullticolenearity -- check classification system
+
+# Interpretation of VIF Values:
+#   VIF = 1: No multicollinearity.
+# 1 < VIF < 5: Moderate multicollinearity, usually not problematic.
+# VIF > 5: High multicollinearity, which may be problematic.
+# VIF > 10: Very high multicollinearity, often considered problematic and should be addressed.
+
+# as suspected:
+# wc: With a VIF of 4.490936, waist circumference shows moderate multicollinearity.
+# imc: With a VIF of 4.095716, IMC shows moderate multicollinearity.
+
+# checking for homecedasticity - of residuals
+qqnorm(residuals(multivariate_model_1))
+qqline(residuals(multivariate_model_1), col = "red")
+par(mfrow = c(2, 2))  # Set up the plotting area
+plot(multivariate_model_1)
+
+
+# checking for homecedasticity - of residuals
+qqnorm(residuals(multivariate_model_4))
+qqline(residuals(multivariate_model_4), col = "red")
+par(mfrow = c(2, 2))  # Set up the plotting area
+plot(multivariate_model_4)
+
+
+
+
+# perform cross validation:........
 
 
