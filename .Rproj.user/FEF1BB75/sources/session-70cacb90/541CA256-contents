@@ -313,9 +313,13 @@ ggplot(tidy_model_3b, aes(x = term, y = estimate, ymin = conf.low, ymax = conf.h
 
 ######### MODEL EVALUATION
 
-# compare model 3 and 4 with similar determination coefficient:
-anova(multivariate_model_1a,multivariate_model_2a) 
+# compare model 2 which is nested in M1:
+anova(multivariate_model_2a, multivariate_model_1a) 
+anova(multivariate_model_2b, multivariate_model_1b) 
 
+# compare model 3 which is nested in M1:
+anova(multivariate_model_3a, multivariate_model_1a) 
+anova(multivariate_model_3b, multivariate_model_1b) 
 
 n <- nrow(bp)
 
